@@ -7,10 +7,30 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from validate_email import verify_email_candidate
 import os
-# Initialize FastAPI app
-app = FastAPI(title="Email Validation API",
-             description="API for validating email addresses",
-             version="1.0.0")
+import logging
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Get port from environment with fallback
+PORT = int(os.getenv("PORT", 8000))
+
+# Initialize FastAPI app with additional configuration
+app = FastAPI(
+    title="Email Validation API",
+    description="API for validating email addresses",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -65,6 +85,24 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
 
+@app.on_event("startup")
+async def startup_event():
+    """Startup event handler"""
+    logger.info("Starting up Email Validation API")
+    logger.info(f"Server running on port {PORT}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown event handler"""
+    logger.info("Shutting down Email Validation API")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT")) 
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        proxy_headers=True,
+        forwarded_allow_ips='*',
+        log_level="info"
+    ) 
