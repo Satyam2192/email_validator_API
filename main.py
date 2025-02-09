@@ -6,7 +6,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from validate_email import verify_email_candidate
-
+import os
 # Initialize FastAPI app
 app = FastAPI(title="Email Validation API",
              description="API for validating email addresses",
@@ -29,7 +29,7 @@ class EmailResponse(BaseModel):
     details: Dict[str, Any]
 
 @app.post("/validate_email", response_model=EmailResponse)
-@limiter.limit("10/minute")  # Rate limit: 10 requests per minute per IP
+@limiter.limit("100/minute")  # Rate limit: 100 requests per minute per IP
 async def validate_email_endpoint(request: Request, email_req: EmailRequest):
     """
     Validate an email address by checking its format and DNS records.
@@ -67,4 +67,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT")) 
