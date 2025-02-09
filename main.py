@@ -20,8 +20,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Get port from environment with fallback
-PORT = int(os.getenv("PORT", 8000))
+
+PORT = int(os.environ.get("PORT", 10000))
 
 # Initialize FastAPI app with additional configuration
 app = FastAPI(
@@ -99,10 +99,9 @@ async def shutdown_event():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        app,
+        "main:app",
         host="0.0.0.0",
         port=PORT,
-        proxy_headers=True,
-        forwarded_allow_ips='*',
-        log_level="info"
+        reload=False,
+        workers=4
     ) 
