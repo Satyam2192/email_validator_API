@@ -13,9 +13,11 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging using LOG_LEVEL from environment
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+numeric_log_level = getattr(logging, log_level, logging.INFO)
 logging.basicConfig(
-    level=logging.INFO,
+    level=numeric_log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -49,30 +51,19 @@ class EmailResponse(BaseModel):
     details: Dict[str, Any]
 
 @app.post("/validate_email", response_model=EmailResponse)
-@limiter.limit("100/minute")  # Rate limit: 100 requests per minute per IP
-async def validate_email_endpoint(request: Request, email_req: EmailRequest):
-    """
-    Validate an email address by checking its format and DNS records.
-    
-    Args:
-        email_req: EmailRequest object containing the email to validate
-        
-    Returns:
-        JSONResponse with validation results
-        
-    Raises:
-        HTTPException: If the request is malformed or rate limited
-    """
+@limiter.limit("100/minute") 
+async def validate_email_endpoint(email_req: EmailRequest, request: Request):
+
     try:
-        result = verify_email_candidate(email_req.email)
+        result = verify_email_candidate(str(email_req.email))
         
         return EmailResponse(
-            email=result.email,
-            is_valid=result.is_valid,
-            has_valid_format=result.has_valid_format,
-            has_mx_record=result.has_mx_record,
-            error_message=result.error_message,
-            details=result.details
+            email=result["email"],
+            is_valid=result["is_valid"],
+            has_valid_format=result["has_valid_format"],
+            has_mx_record=result["has_mx_record"],
+            error_message=result["error_message"],
+            details=result["details"]
         )
     except Exception as e:
         raise HTTPException(
